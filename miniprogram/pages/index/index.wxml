@@ -1,0 +1,31 @@
+<!--index.wxml-->
+<view class="container">
+  <view class="title">微信运动步数同步</view>
+  
+  <view class="step-card">
+    <view class="step-value">{{steps}}</view>
+    <view class="step-label">
+      <text wx:if="{{isMock}}" class="mock-label">(模拟数据)</text>
+      <text wx:else>今日步数</text>
+    </view>
+  </view>
+  
+  <view class="sync-status">
+    <text>上次同步: {{lastSyncTime}}</text>
+  </view>
+  
+  <view class="button-area">
+    <button 
+      type="primary" 
+      bindtap="syncSteps" 
+      loading="{{loading}}" 
+      disabled="{{loading}}">
+      {{loading ? '正在同步...' : '同步步数'}}
+    </button>
+  </view>
+  
+  <view class="tips">
+    <text>提示：点击按钮，将您最新的微信运动步数同步到博客。</text>
+  </view>
+  
+</view> 

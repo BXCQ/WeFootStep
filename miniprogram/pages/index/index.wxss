@@ -1,0 +1,130 @@
+/**index.wxss**/
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40rpx 20rpx;
+  box-sizing: border-box;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
+    Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+}
+
+.title {
+  font-size: 40rpx;
+  font-weight: bold;
+  margin-bottom: 40rpx;
+  color: #333;
+}
+
+.step-card {
+  width: 90%;
+  background-color: #4caf50;
+  color: white;
+  border-radius: 20rpx;
+  padding: 40rpx;
+  margin: 20rpx 0 60rpx;
+  box-shadow: 0 4rpx 10rpx rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.date {
+  font-size: 28rpx;
+  margin-bottom: 20rpx;
+  opacity: 0.8;
+}
+
+.step-value {
+  font-size: 100rpx;
+  font-weight: bold;
+  line-height: 1;
+  margin-bottom: 10rpx;
+}
+
+.step-label {
+  font-size: 32rpx;
+  opacity: 0.8;
+}
+
+.button-area {
+  width: 90%;
+  margin: 20rpx 0;
+}
+
+.button-area button {
+  width: 100%;
+  border-radius: 10rpx;
+  font-weight: normal;
+  letter-spacing: 2rpx;
+}
+
+.tips {
+  margin-top: 40rpx;
+  font-size: 24rpx;
+  color: #999;
+  text-align: center;
+  padding: 0 40rpx;
+}
+
+/* 调试信息样式 */
+.debug-info {
+  width: 90%;
+  margin-top: 40rpx;
+  padding: 20rpx;
+  background-color: #f5f5f5;
+  border-radius: 10rpx;
+  border: 1rpx solid #ddd;
+}
+
+.debug-title {
+  font-size: 28rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 10rpx;
+}
+
+.debug-content {
+  display: flex;
+  flex-direction: column;
+  font-size: 24rpx;
+  color: #666;
+}
+
+.debug-content text {
+  margin: 4rpx 0;
+}
+
+.debug-note {
+  margin-top: 10rpx;
+  font-size: 22rpx;
+  color: #ff6600;
+}
+
+/* 添加动画效果 */
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.step-value {
+  animation: pulse 2s infinite;
+}
+
+.sync-status {
+  margin: 10rpx 0 20rpx;
+  font-size: 26rpx;
+  color: #666;
+  padding: 10rpx 20rpx;
+  background-color: #f0f0f0;
+  border-radius: 30rpx;
+}
