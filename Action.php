@@ -1,6 +1,8 @@
 <?php
 if (!defined('__TYPECHO_ROOT_DIR__')) exit;
 
+require_once 'Widget.php';
+
 /**
  * WeFootStep 操作类
  *
@@ -31,7 +33,7 @@ class WeFootStep_Action extends Typecho_Widget implements Widget_Interface_Do
 
         // Set header at the very beginning
         @header('Content-Type: application/json; charset=utf-8');
-        
+
         $this->log("====== New Sync Request ======");
 
         $options = Helper::options()->plugin('WeFootStep');
@@ -70,7 +72,7 @@ class WeFootStep_Action extends Typecho_Widget implements Widget_Interface_Do
             }
 
             $this->log("Successfully got session_key.");
-            
+
             $decryptedData = $this->_decryptData($options->appid, $sessionData['session_key'], $postData['encryptedData'], $postData['iv']);
 
             if ($decryptedData['error']) {
@@ -103,6 +105,59 @@ class WeFootStep_Action extends Typecho_Widget implements Widget_Interface_Do
     }
 
     /**
+     * 获取步数统计数据API
+     */
+    public function getStepData()
+    {
+        // 开始输出缓冲，捕获任何意外输出
+        ob_start();
+
+        // 设置响应头
+        header('Content-Type: application/json; charset=utf-8');
+
+        $this->log("====== Get Step Data Request ======");
+
+        try {
+            // 创建Widget实例来获取数据
+            $widget = new WeFootStep_Widget();
+            $history = $widget->getStepHistory();
+            $stats = $widget->getStepStats();
+
+            // 处理历史数据，格式化为前端图表所需格式
+            $chartData = [];
+            foreach ($history as $item) {
+                $chartData[] = [
+                    'date' => $item['date'],
+                    'steps' => (int)$item['step_count']
+                ];
+            }
+
+            // 按日期排序
+            usort($chartData, function ($a, $b) {
+                return strtotime($a['date']) - strtotime($b['date']);
+            });
+
+            $response = [
+                'status' => 'success',
+                'data' => [
+                    'stats' => $stats,
+                    'chart_data' => $chartData
+                ]
+            ];
+
+            $this->log("Step data retrieved successfully");
+        } catch (Exception $e) {
+            $this->log("Error in getStepData: " . $e->getMessage());
+            $response = [
+                'status' => 'error',
+                'message' => '获取步数数据失败: ' . $e->getMessage()
+            ];
+        }
+
+        $this->sendAndExit($response);
+    }
+
+    /**
      * Directly requests the session key from WeChat's API.
      * This method contains the cURL logic previously in WxRunHelper.
      *
@@ -116,7 +171,7 @@ class WeFootStep_Action extends Typecho_Widget implements Widget_Interface_Do
         $this->log("Attempting to get session key directly...");
         $url = "https://api.weixin.qq.com/sns/jscode2session?appid={$appId}&secret={$appSecret}&js_code={$code}&grant_type=authorization_code";
         $this->log("Requesting URL: " . $url);
-        
+
         if (!function_exists('curl_init')) {
             $this->log("cURL is not enabled on this server.");
             return ['errcode' => -1, 'errmsg' => '服务器未启用cURL扩展，无法连接微信'];
@@ -130,17 +185,17 @@ class WeFootStep_Action extends Typecho_Widget implements Widget_Interface_Do
         curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
         curl_setopt($ch, CURLOPT_TIMEOUT, 15); // Increased timeout
         $response = curl_exec($ch);
-        
+
         if ($response === false) {
             $error = curl_error($ch);
             curl_close($ch);
             $this->log("cURL Execution Error: " . $error);
             return ['errcode' => -1, 'errmsg' => "cURL错误: {$error}"];
         }
-        
+
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
-        
+
         $this->log("cURL HTTP Status Code: " . $httpCode);
         $this->log("cURL Full Response: " . $response);
 
@@ -153,7 +208,7 @@ class WeFootStep_Action extends Typecho_Widget implements Widget_Interface_Do
             $this->log("JSON Decode Error. Response was: " . $response);
             return ['errcode' => -1, 'errmsg' => '解析微信响应失败'];
         }
-        
+
         return $data;
     }
 
@@ -184,7 +239,7 @@ class WeFootStep_Action extends Typecho_Widget implements Widget_Interface_Do
         $result = openssl_decrypt($aesCipher, "AES-128-CBC", $aesKey, 1, $aesIV);
 
         if ($result === false) {
-             return ['error' => true, 'message' => 'openssl_decrypt 失败'];
+            return ['error' => true, 'message' => 'openssl_decrypt 失败'];
         }
 
         $dataObj = json_decode($result, true);
@@ -213,10 +268,10 @@ class WeFootStep_Action extends Typecho_Widget implements Widget_Interface_Do
         $db = Typecho_Db::get();
         $time = time();
         $date = date('Y-m-d', $time);
-        
+
         try {
             $exist = $db->fetchRow($db->select()->from('table.we_foot_step')->where('date = ?', $date));
-            
+
             if ($exist) {
                 $this->log("Updating existing record for today in database.");
                 $db->query($db->update('table.we_foot_step')->rows(['step_count' => $steps, 'modified' => $time])->where('id = ?', $exist['id']));
@@ -235,10 +290,11 @@ class WeFootStep_Action extends Typecho_Widget implements Widget_Interface_Do
      * 统一的JSON输出和退出函数
      * @param array $data The data to be encoded as JSON and sent.
      */
-    private function sendAndExit($data) {
+    private function sendAndExit($data)
+    {
         $this->log("Response: " . json_encode($data));
         $this->log("====== Sync Request End ======\n");
-        
+
         // Clean the buffer of any stray output
         ob_end_clean();
 
@@ -247,21 +303,25 @@ class WeFootStep_Action extends Typecho_Widget implements Widget_Interface_Do
         exit;
     }
 
-    /**
-     * 绑定动作
-     */
     public function action()
     {
-        // 绑定 'do=sync' 的请求到 sync 方法
-        $this->on($this->request->get('do') == 'sync')->sync();
+        $do = $this->request->get('do');
+        switch ($do) {
+            case 'sync':
+            $this->sync();
+                break;
+            case 'getStepData':
+            $this->getStepData();
+                break;
+            default:
+                // For any other action, redirect to the homepage to prevent errors.
+                $this->response->redirect($this->options->siteUrl);
+                break;
+        }
     }
 
-    /**
-     * 兼容旧版，无操作
-     */
     public function execute()
     {
-        // For backward compatibility
+        $this->action();
     }
 }
- 

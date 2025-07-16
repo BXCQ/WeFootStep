@@ -6,8 +6,9 @@ if (!defined('__TYPECHO_ROOT_DIR__')) exit;
  * 
  * @package WeFootStep
  * @author 璇
- * @version 1.0.0
- * @link https://github.com/BXCQ/WeFootStep
+ * @version 1.2.0
+ * @link https://www.bxcq.org
+ * @dependence 1.0.0-*
  */
 class WeFootStep_Plugin implements Typecho_Plugin_Interface
 {
@@ -20,9 +21,6 @@ class WeFootStep_Plugin implements Typecho_Plugin_Interface
      */
     public static function activate()
     {
-        // 加载辅助函数
-        // require_once 'libs/WxRunHelper.php';
-
         // 创建数据表
         $db = Typecho_Db::get();
         $prefix = $db->getPrefix();
@@ -50,50 +48,36 @@ class WeFootStep_Plugin implements Typecho_Plugin_Interface
             )");
         }
 
-        // 加载 Widget 类
-        Typecho_Widget::widget('WeFootStep_Widget')->to($weFootStep);
+        // 注册Action
+        Helper::addAction('WeFootStep', 'WeFootStep_Action');
 
-        // 使用 addAction 注册一个标准的动作接口
-        Helper::addAction('wefootstep', 'WeFootStep_Action');
+        // 注册路由
+        Helper::addRoute('wefootstep_sync_route', '/wefootstep/sync', 'WeFootStep_Action', 'sync');
+        Helper::addRoute('wefootstep_data_route', '/wefootstep/data', 'WeFootStep_Action', 'getStepData');
 
-        // 添加插件所需的钩子
-        Typecho_Plugin::factory('Widget_Archive')->footer = array('WeFootStep_Plugin', 'footer');
-        Typecho_Plugin::factory('Widget_Archive')->header = array('WeFootStep_Plugin', 'header');
-        Typecho_Plugin::factory('admin/menu.php')->navBar = array('WeFootStep_Plugin', 'navBarWrapper');
+        // 添加后台管理菜单 (已移除)
+        // Helper::addPanel(3, 'panel.php', '微信步数', '管理微信运动步数', 'administrator');
 
-        // 创建上传目录
-        if (!is_dir(dirname(__FILE__) . '/cache/')) {
-            mkdir(dirname(__FILE__) . '/cache/', 0777, true);
-        }
-
-        return _t('插件启用成功，请设置微信运动参数');
+        return _t('插件已启用，请进行相关设置');
     }
-
+    
     /**
      * 禁用插件方法,如果禁用失败,直接抛出异常
      * 
      * @static
      * @access public
      * @return void
-     * @throws Typecho_Plugin_Exception
      */
     public static function deactivate()
     {
-        // 移除动作接口
-        Helper::removeAction('wefootstep');
+        // 删除路由
+        Helper::removeRoute('wefootstep_sync_route');
+        Helper::removeRoute('wefootstep_data_route');
 
-        // 是否删除数据表
-        $db = Typecho_Db::get();
-        $config = Helper::options()->plugin('WeFootStep');
-
-        if (isset($config->dropTable) && $config->dropTable) {
-            $db->query("DROP TABLE IF EXISTS `" . $db->getPrefix() . "we_foot_step`");
-            $dir = dirname(__FILE__) . '/cache/';
-            if (is_dir($dir)) {
-                self::deleteDir($dir);
-            }
-        }
-
+        // 删除后台管理菜单和Action (已移除)
+        // Helper::removePanel(3, 'panel.php');
+        Helper::removeAction('WeFootStep');
+        
         return _t('插件已禁用');
     }
 
@@ -231,7 +215,21 @@ class WeFootStep_Plugin implements Typecho_Plugin_Interface
     }
 
     /**
-     * 添加页脚内容
+     * 临时导航栏包装方法，用于安全地过渡
+     * 
+     * @access public
+     * @param string $navBar
+     * @return string
+     */
+    public static function navBarWrapper($navBar)
+    {
+        // 此方法为空，以防止因旧钩子注册而导致的致命错误。
+        // 在停用并重新激活插件后，此方法可以被安全地移除。
+        return $navBar;
+    }
+    
+    /**
+     * 在页面底部添加内容
      * 
      * @access public
      * @param string $footer
@@ -239,17 +237,24 @@ class WeFootStep_Plugin implements Typecho_Plugin_Interface
      */
     public static function footer($footer = '')
     {
-        $options = Helper::options()->plugin('WeFootStep');
-
-        if ($options->displayPosition == 'footer') {
-            $footer .= self::render();
+        // All JavaScript logic is now being moved back into headnav.php
+        // to ensure execution context and timing are correct.
+        // Therefore, we no longer need to load any scripts here.
+        
+        // This part handles the original plugin functionality of rendering a widget
+        // in the footer based on plugin settings.
+        $plugin_options = Helper::options()->plugin('WeFootStep');
+        
+        if (isset($plugin_options->displayPosition) && $plugin_options->displayPosition == 'footer') {
+            $html = self::render();
+            return $footer . $html;
         }
-
+        
         return $footer;
     }
-
+    
     /**
-     * 添加头部内容
+     * 在页面头部添加内容
      * 
      * @access public
      * @param string $header
@@ -257,44 +262,10 @@ class WeFootStep_Plugin implements Typecho_Plugin_Interface
      */
     public static function header($header = '')
     {
-        $options = Helper::options()->plugin('WeFootStep');
-
-        // 此处不再需要同步逻辑，因为所有同步都由小程序端通过 Action 接口发起
-
+        // 不再需要在 header 中加载 echarts，统一移动到 footer
         return $header;
     }
-
-    /**
-     * 导航栏包装方法，用于适配钩子
-     * 
-     * @access public
-     * @param string $navBar 导航条HTML
-     * @return string
-     */
-    public static function navBarWrapper($navBar)
-    {
-        if (Helper::options()->request->getPathInfo() == '/admin/' || Helper::options()->request->getPathInfo() == '/admin/index.php') {
-            $adminUrl = Helper::options()->adminUrl;
-            $url = rtrim($adminUrl, '/') . '/extending.php?panel=WeFootStep/admin/manage.php';
-            $navBar .= '<a href="' . $url . '" class="parent"><span class="message right">' . _t('微信步数') . '</span></span></a>';
-        }
-
-        return $navBar;
-    }
-
-    /**
-     * 原导航按钮方法（保留用于向后兼容）
-     * 
-     * @access public
-     * @param array $navBar 导航条
-     * @param mixed $request 请求对象（可选）
-     * @return string
-     */
-    public static function navBar($navBar, $request = null)
-    {
-        return self::navBarWrapper($navBar);
-    }
-
+    
     /**
      * 删除目录及文件
      * 

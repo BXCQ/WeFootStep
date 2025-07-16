@@ -30,6 +30,111 @@ class WeFootStep_Widget extends Widget_Abstract implements Widget_Interface_Do
     }
 
     /**
+     * 获取步数历史数据
+     * @param int $limit 限制返回的记录数
+     * @return array 步数历史数据
+     */
+    public function getStepHistory($limit = 30)
+    {
+        $db = Typecho_Db::get();
+        return $db->fetchAll(
+            $db->select()
+                ->from('table.we_foot_step')
+                ->order('date', Typecho_Db::SORT_DESC)
+                ->limit($limit)
+        );
+    }
+
+    /**
+     * 获取步数统计数据
+     * @return array 步数统计数据
+     */
+    public function getStepStats()
+    {
+        $db = Typecho_Db::get();
+        $today = date('Y-m-d');
+        $weekStart = date('Y-m-d', strtotime('-6 days'));
+        $monthStart = date('Y-m-d', strtotime('-29 days'));
+        
+        // 今日步数
+        $todaySteps = $db->fetchRow(
+            $db->select('step_count')
+                ->from('table.we_foot_step')
+                ->where('date = ?', $today)
+        );
+        
+        // 本周平均步数
+        $weekAvg = $db->fetchRow(
+            $db->select('AVG(step_count) AS avg_steps')
+                ->from('table.we_foot_step')
+                ->where('date >= ?', $weekStart)
+        );
+        
+        // 本月平均步数
+        $monthAvg = $db->fetchRow(
+            $db->select('AVG(step_count) AS avg_steps')
+                ->from('table.we_foot_step')
+                ->where('date >= ?', $monthStart)
+        );
+        
+        // 累计步数
+        $totalSteps = $db->fetchRow(
+            $db->select('SUM(step_count) AS total_steps')
+                ->from('table.we_foot_step')
+        );
+        
+        // 最佳记录
+        $bestRecord = $db->fetchRow(
+            $db->select('date, step_count')
+                ->from('table.we_foot_step')
+                ->order('step_count', Typecho_Db::SORT_DESC)
+                ->limit(1)
+        );
+        
+        // 确保返回的数据是有效的
+        $today_steps = empty($todaySteps) ? 0 : (int)$todaySteps['step_count'];
+        $week_avg = empty($weekAvg) || empty($weekAvg['avg_steps']) ? 0 : (int)round($weekAvg['avg_steps']);
+        $month_avg = empty($monthAvg) || empty($monthAvg['avg_steps']) ? 0 : (int)round($monthAvg['avg_steps']);
+        $total_steps = empty($totalSteps) || empty($totalSteps['total_steps']) ? 0 : (int)$totalSteps['total_steps'];
+        
+        // 处理最佳记录
+        if (!empty($bestRecord) && isset($bestRecord['date']) && isset($bestRecord['step_count'])) {
+            $best_record = [
+                'date' => $bestRecord['date'],
+                'step_count' => (int)$bestRecord['step_count']
+            ];
+        } else {
+            $best_record = null;
+        }
+        
+        return [
+            'today_steps' => $today_steps,
+            'week_avg' => $week_avg,
+            'month_avg' => $month_avg,
+            'total_steps' => $total_steps,
+            'best_record' => $best_record
+        ];
+    }
+
+    /**
+     * 获取步数JSON数据，用于AJAX请求
+     */
+    public function getStepDataJson()
+    {
+        $history = $this->getStepHistory();
+        $stats = $this->getStepStats();
+        
+        $data = [
+            'history' => $history,
+            'stats' => $stats
+        ];
+        
+        header('Content-Type: application/json');
+        echo json_encode($data);
+        exit;
+    }
+
+    /**
      * 输出微信运动步数
      */
     public function stepCount()
