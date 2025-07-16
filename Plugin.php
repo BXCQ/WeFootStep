@@ -7,8 +7,8 @@ if (!defined('__TYPECHO_ROOT_DIR__')) exit;
  * @package WeFootStep
  * @author 璇
  * @version 1.2.0
- * @link https://www.bxcq.org
- * @dependence 1.0.0-*
+ * @link https://blog.ybyq.wang/
+ * @Github https://github.com/BXCQ/WeFootStep
  */
 class WeFootStep_Plugin implements Typecho_Plugin_Interface
 {

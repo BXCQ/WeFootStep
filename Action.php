@@ -308,10 +308,10 @@ class WeFootStep_Action extends Typecho_Widget implements Widget_Interface_Do
         $do = $this->request->get('do');
         switch ($do) {
             case 'sync':
-            $this->sync();
+                $this->sync();
                 break;
             case 'getStepData':
-            $this->getStepData();
+                $this->getStepData();
                 break;
             default:
                 // For any other action, redirect to the homepage to prevent errors.

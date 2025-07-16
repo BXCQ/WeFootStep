@@ -14,15 +14,20 @@ WeFootStep 是一款专为 Typecho 博客设计的插件，能将您的微信运
 
 ```
 WeFootStep/
-├── typecho-plugin/        # Typecho插件部分
-│   ├── Plugin.php         # 插件主文件
-│   ├── Action.php         # 接口处理文件
-│   └── Widget.php         # 前端渲染文件
+├── Plugin.php             # 插件主文件
+├── Action.php             # API请求处理器
+├── Widget.php             # 前端渲染器
+├── README.md              # 项目说明
+├── WeFootStep使用指南.md   # 详细使用文档
 └── miniprogram/           # 微信小程序部分
-    └── pages/index/       # 小程序页面
-        ├── index.js       # 核心逻辑
-        ├── index.wxml     # 界面布局
-        └── index.wxss     # 样式文件
+    ├── app.js
+    ├── app.json
+    └── pages/
+        └── index/
+            ├── index.js
+            ├── index.json
+            ├── index.wxml
+            └── index.wxss
 ```
 
 ## 快速上手指南
