@@ -129,9 +129,15 @@ class WeFootStep_Widget extends Widget_Abstract implements Widget_Interface_Do
             'stats' => $stats
         ];
         
-        header('Content-Type: application/json');
-        echo json_encode($data);
-        exit;
+        // 只在AJAX请求时才直接输出JSON并退出
+        if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
+            header('Content-Type: application/json');
+            echo json_encode($data);
+            exit;
+        }
+        
+        // 如果不是AJAX请求，返回数据而不直接输出
+        return $data;
     }
 
     /**
